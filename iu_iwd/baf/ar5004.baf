@@ -1,0 +1,9 @@
+IF
+  Global("CDTelanisDaen","MYAREA",1)
+  Global("CDDaen","GLOBAL",0)
+THEN 
+  RESPONSE #100
+    Wait(2)
+    SetGlobal("CDTelanisDaen","MYAREA",2)
+    ActionOverride("telanis",StartDialogueNoSet([PC]))
+END

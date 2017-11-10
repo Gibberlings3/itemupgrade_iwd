@@ -1,0 +1,9 @@
+IF
+  True()
+THEN
+  RESPONSE #100
+    CutSceneId(Myself)
+    HideCreature(Myself,TRUE)
+    Wait(2)
+    ChangeAnimation("cdvex")
+END

@@ -1,0 +1,13 @@
+IF
+  HasItem("misc01",Myself)
+THEN
+  RESPONSE #100
+    DestroyItem("misc01")
+END
+
+IF
+  HasItem("yeti",Myself)
+THEN
+  RESPONSE #100
+    DestroyItem("yeti")
+END

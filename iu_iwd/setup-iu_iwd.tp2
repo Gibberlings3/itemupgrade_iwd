@@ -1,0 +1,920 @@
+BACKUP ~iu_iwd/backup~ // location to store files for backup
+AUTHOR ~pcamagna@yahoo.com~ // email address displayed if install fails
+
+README ~iu_iwd/readme-iu_iwd.html~
+VERSION ~v5~
+
+AUTO_TRA ~iu_iwd/languages/%s~
+
+LANGUAGE  ~English~  ~english~  ~iu_iwd/languages/english/setup.tra~
+LANGUAGE ~Russian (by prowler, Accolon, Hawkmoon, Skaramush, Aldanis Darkwood)~ ~russian~ ~iu_iwd/languages/russian/setup.tra~
+LANGUAGE ~Francais (par Lothringen)~ ~french~ ~iu_iwd/languages/french/setup.tra~
+
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////                                                  \\\\\
+///// item upgrade                                     \\\\\
+/////                                                  \\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
+
+BEGIN @0 DESIGNATED 0
+
+ACTION_IF FILE_EXISTS_IN_GAME ~kitlist.2da~ THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+
+  OUTER_SET "iwd-in-bg2" = 1
+  
+END ELSE BEGIN
+
+  OUTER_SET "iwd-in-bg2" = 0
+  
+END
+
+COMPILE ~iu_iwd/dlg/gond.d~  // girdle of gond upgrade
+COMPILE ~iu_iwd/dlg/pelts.d~ // pelt upgrades
+
+EXTEND_BOTTOM ~ar2004.bcs~   ~iu_iwd/baf/ar2004.baf~   // set var if stoutward is in the game
+EXTEND_BOTTOM ~ar3001.bcs~   ~iu_iwd/baf/ar3001.baf~   // add tools
+EXTEND_BOTTOM ~ar6003.bcs~   ~iu_iwd/baf/ar6003.baf~   // add symbol if stoutward is in the game
+EXTEND_BOTTOM ~kuorrick.bcs~ ~iu_iwd/baf/kuorrick.baf~ // orrick purges spare pelts
+
+// add new icons
+COPY ~iu_iwd/bam/cdechain.bam~ ~override~ // elven chain mail
+     ~iu_iwd/bam/cdharmor.bam~ ~override~ // yeti hide armor
+     ~iu_iwd/bam/cdmitham.bam~ ~override~ // mithril hammer
+     ~iu_iwd/bam/cdrdagg.bam~  ~override~ // returning throwing dagger
+     ~iu_iwd/bam/cdrdart.bam~  ~override~ // returning dart
+     ~iu_iwd/bam/cdstout.bam~  ~override~ // improved stoutward
+     ~iu_iwd/bam/cdtools.bam~  ~override~ // gnomish tools
+     ~iu_iwd/bam/cdwuff.bam~   ~override~ // winter wuff cloak
+
+COPY_EXISTING ~ar2004.are~ ~override~
+              ~ar3001.are~ ~override~
+              ~ar6003.are~ ~override~
+  WRITE_ASCIIE 0x94 ~%SOURCE_RES%~ #8
+  BUT_ONLY_IF_IT_CHANGES
+
+// elven chain mail
+COPY ~iu_iwd/itm/cdechain.itm~ ~override~
+  SAY 0x08 @1024 // unidentified name
+  SAY 0x0c @1024 // identified name
+  SAY 0x50 @1025 // unidentified description
+  SAY 0x54 @1025 // identified description
+
+// only available in a store, so...
+COPY_EXISTING ~beltgon.itm~ ~override~
+  WRITE_SHORT 0x42 0 // lore
+  BUT_ONLY_IF_IT_CHANGES
+
+// imp girdle of gond
+COPY_EXISTING ~beltgon.itm~ ~override/cdgond.itm~
+  SAY 0x50 @1012  // unidentified description
+  SAY 0x54 @1012  // identified description
+  READ_LONG  0x6a "fx_off" ELSE 0
+  READ_SHORT 0x70 "fx_num" ELSE 0
+  FOR (index = 0 ; index < fx_num ; index = index + 1) BEGIN
+    READ_SHORT ("%fx_off%" +        ("%index%" * 0x30)) "opcode"
+    PATCH_IF ("%opcode%" = 90) BEGIN // lockpicking
+      WRITE_LONG  ("%fx_off%" + 0x04 + ("%index%" * 0x30)) 15 // high probability
+    END ELSE
+    PATCH_IF ("%opcode%" = 91) BEGIN // find/detect traps
+      WRITE_LONG  ("%fx_off%" + 0x04 + ("%index%" * 0x30)) 10 // high probability
+    END
+  END
+
+// yeti hide armor
+COPY ~iu_iwd/itm/cdharmor.itm~ ~override~
+  SAY 0x08 @1000 // unidentified name
+  SAY 0x0c @1000 // identified name
+  SAY 0x50 @1001 // unidentified description
+  SAY 0x54 @1001 // identified description
+
+// mithril hammer
+COPY ~iu_iwd/itm/cdmitham.itm~ ~override~
+  SAY 0x08 @1033 // unidentified name
+  SAY 0x0c @1034 // identified name
+  SAY 0x50 @1035 // unidentified description
+  SAY 0x54 @1036 // identified description
+
+// returning throwing dagger
+COPY ~iu_iwd/itm/cdrdagg.itm~ ~override~
+  SAY 0x08 @1026 // unidentified name
+  SAY 0x0c @1026 // identified name
+  SAY 0x50 @1027 // unidentified description
+  SAY 0x54 @1027 // identified description
+
+// improved stoutward
+COPY_EXISTING ~stout.itm~ ~override/cdstout.itm~
+  WRITE_ASCII 0x3a ~cdstout~ #8
+  WRITE_SHORT 0x42 0 // lore
+  SAY 0x50 @1013  // unidentified description
+  SAY 0x54 @1013  // identified description
+  READ_LONG  0x64 "abil_off"
+  READ_SHORT 0x68 "abil_num"
+  READ_LONG  0x6a "fx_off"
+  READ_SHORT 0x70 "fx_num"
+  SET "delta" = 2
+  // insert new effect
+  INSERT_BYTES  ("%fx_off%"       ) 0x30
+    WRITE_SHORT ("%fx_off%"       ) 18 // max hp bonus
+    WRITE_BYTE  ("%fx_off%" + 0x02)   1 // target: self
+    WRITE_LONG  ("%fx_off%" + 0x04)  10 // +10 hp
+    WRITE_LONG  ("%fx_off%" + 0x08)   3 // add hp w/o updating current
+    WRITE_BYTE  ("%fx_off%" + 0x0c)   2 // instant/while equipped
+    WRITE_BYTE  ("%fx_off%" + 0x12) 100 // probability
+  INSERT_BYTES  ("%fx_off%"       ) 0x30
+    WRITE_SHORT ("%fx_off%"       ) 44 // strength bonus
+    WRITE_BYTE  ("%fx_off%" + 0x02)   1 // target: self
+    WRITE_LONG  ("%fx_off%" + 0x04)   1 // +1
+    WRITE_BYTE  ("%fx_off%" + 0x0c)   2 // instant/while equipped
+    WRITE_BYTE  ("%fx_off%" + 0x12) 100 // probability
+  // adjust indices on abilities
+  FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+    READ_SHORT  ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) "abil_fx_idx"
+    WRITE_SHORT ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) ("%abil_fx_idx%" + "%delta%")
+  END
+  WRITE_SHORT 0x70 ("%fx_num%" + "%delta%")
+
+// returning dart
+COPY ~iu_iwd/itm/cdrdart.itm~ ~override~
+  SAY 0x08 @1028 // unidentified name
+  SAY 0x0c @1028 // identified name
+  SAY 0x50 @1029 // unidentified description
+  SAY 0x54 @1029 // identified description
+
+// gnomish tools
+COPY ~iu_iwd/itm/cdtools.itm~ ~override~
+  SAY 0x08 @1037 // unidentified name
+  SAY 0x0c @1037 // identified name
+  SAY 0x50 @1038 // unidentified description
+  SAY 0x54 @1038 // identified description
+
+// winter wuff cloak
+COPY ~iu_iwd/itm/cdwuff.itm~ ~override~
+  SAY 0x08 @1031 // unidentified name
+  SAY 0x0c @1031 // identified name
+  SAY 0x50 @1032 // unidentified description
+  SAY 0x54 @1032 // identified description
+  PATCH_IF ("%iwd-in-bg2%" = 1) BEGIN
+    WRITE_ASCII 0xe6 ~spin246~ #8 // winter wolf innate is different resource
+  END
+
+COPY_EXISTING ~kuork2.sto~ ~override~
+  ADD_STORE_ITEM ~cdrdagg~ AFTER ~wandmis~ #0 #0 #0 ~IDENTIFIED~ #1 // returning dagger
+  BUT_ONLY_IF_IT_CHANGES
+    
+COPY_EXISTING ~shlehlan.sto~ ~override~
+  ADD_STORE_ITEM ~cdechain~ AFTER ~elfwine~ #0 #0 #0 ~IDENTIFIED~ #1 // elven chain
+  ADD_STORE_ITEM ~cdrdart~  AFTER ~udart3b~ #0 #0 #0 ~IDENTIFIED~ #1 // returning dart
+  BUT_ONLY_IF_IT_CHANGES
+
+/////                                                  \\\\\
+///// how                                              \\\\\
+/////                                                  \\\\\
+
+ACTION_IF NOT FILE_EXISTS_IN_GAME ~ar9100.are~ THEN BEGIN // no how
+
+  COMPILE ~iu_iwd/dlg/conlan.d~ // stoutward upgrade
+
+END ELSE BEGIN
+
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+
+    APPEND ~tooltip.2da~ ~cdgloom           -1           86194        86231~
+    APPEND ~tooltip.2da~ ~cdmyst            86216        95501       -1~
+    APPEND ~tooltip.2da~ ~cynicis           -1           86194        86231~
+
+  END ELSE BEGIN // if true IWD
+
+    APPEND ~tooltip.2da~ ~cdgloom           -1           12094        12131~
+    APPEND ~tooltip.2da~ ~cdmyst            12116        21401       -1~
+    APPEND ~tooltip.2da~ ~cynicis           -1           12094        12131~
+
+    COPY_EXISTING ~tooltip.2da~ ~override~
+        REPLACE ~cdgloomtext1~   ~12094~
+        REPLACE ~cdgloomtext2~   ~12131~
+        REPLACE ~cdmysttext1~    ~12116~
+        REPLACE ~cdmysttext2~    ~21401~
+        REPLACE ~cdcynicistext1~ ~12094~
+        REPLACE ~cdcynicistext2~ ~12131~
+  
+  END
+
+  APPEND ~tooltip.2da~ ~cdxbowbm          -1           cdxbowbmtext       -1~
+  APPEND ~tooltip.2da~ ~cddaen            cddaentext        -1          -1~
+  APPEND ~tooltip.2da~ ~cddaen2           cddaentext        -1          -1~
+  COPY_EXISTING ~tooltip.2da~ ~override~
+    REPLACE ~cddaentext~   @1045
+    REPLACE ~cdxbowbmtext~ @1046
+
+  COMPILE ~iu_iwd/dlg/cddaen.d~     // myrloch vale upgrade
+  COMPILE ~iu_iwd/dlg/conlan_how.d~ // stoutward and white dragon scale upgrade
+    USING ~iu_iwd/languages/%s/conlan.tra~
+  COMPILE ~iu_iwd/dlg/gloom.d~      // gloom upgrade
+  COMPILE ~iu_iwd/dlg/muller.d~     // bren muller's xbow upgrade
+
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+  
+    COPY ~iu_iwd/dlg/remorrhaz.d~ ~iu_iwd/dlg/remorrhaz.d~
+      REPLACE_TEXTUALLY ~#10098~ ~#84198~
+
+    COPY ~iu_iwd/dlg/mystery.d~   ~iu_iwd/dlg/mystery.d~
+      REPLACE_TEXTUALLY ~School(\(Player[1-6]\),Necromancer)~ ~Kit(\1,MAGESCHOOL_NECROMANCER)~
+  
+  END
+  
+  COMPILE ~iu_iwd/dlg/remorrhaz.d~  // remorrhaz shell upgrade
+  COMPILE ~iu_iwd/dlg/mystery.d~    // mystery of the dead upgrade
+
+  COMPILE ~iu_iwd/baf/cddaen.baf~  // daen winterbrush's override script
+  COMPILE ~iu_iwd/baf/cdgloom.baf~ // gloom cutscene
+  COMPILE ~iu_iwd/baf/cdyoung.baf~ // young rage cutscene
+  
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+
+    COPY_EXISTING ~cdgloom.bcs~ ~override~
+      DECOMPILE_BCS_TO_BAF
+        REPLACE_TEXTUALLY ~"kieran"~ ~"kierannye"~
+      COMPILE_BAF_TO_BCS
+      BUT_ONLY
+  
+  END
+
+  EXTEND_BOTTOM ~ar4004.bcs~   ~iu_iwd/baf/ar4004.baf~   // add ballad of daen
+  EXTEND_BOTTOM ~ar5004.bcs~   ~iu_iwd/baf/ar5004.baf~   // telanis speaking post-cutscene
+  EXTEND_BOTTOM ~ar8010.bcs~   ~iu_iwd/baf/ar8010.baf~   // add extra emotion: hope to malavon's lair
+  EXTEND_BOTTOM ~idedion.bcs~  ~iu_iwd/baf/idedion.baf~  // purge spare armor
+  EXTEND_BOTTOM ~lwkieran.bcs~ ~iu_iwd/baf/lwkieran.baf~ // kieran cutscene trippin'
+  EXTEND_BOTTOM ~lwmurd.bcs~   ~iu_iwd/baf/lwmurd.baf~   // murdaugh speaking post-cutscene
+
+  // add new icons
+  COPY ~iu_iwd/bam/cdqbow.bam~   ~override~ // quiver of plenty
+       ~iu_iwd/bam/cdqsling.bam~ ~override~ // bag of plenty
+       ~iu_iwd/bam/cdqxbow.bam~  ~override~ // case of plenty
+       ~iu_iwd/bam/cdrelm.bam~   ~override~ // remorrhaz shell helmet
+       ~iu_iwd/bam/cdrem.bam~    ~override~ // remorrhaz shell
+       ~iu_iwd/bam/cdremg.bam~   ~override~ // remorrhaz shell (ground)
+       ~iu_iwd/bam/cdscale.bam~  ~override~ // white dragon scale armor
+       ~iu_iwd/bam/cdscales.bam~ ~override~ // white dragon scales
+
+  COPY_EXISTING ~ar5004.are~ ~override~
+    WRITE_ASCIIE 0x94 ~%SOURCE_RES%~ #8
+    BUT_ONLY_IF_IT_CHANGES
+
+  // daen winterbrush
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+
+    COPY ~iu_iwd/cre/conv_cddaen.cre~ ~override/cddaen.cre~
+    
+  END ELSE BEGIN
+
+    COPY ~iu_iwd/cre/cddaen.cre~ ~override~
+  
+  END
+  
+  COPY_EXISTING ~cddaen.cre~ ~override~
+    SAY 0x08 @1042 // unidentified name
+    SAY 0x0c @1042 // identified name
+  
+  // add extra emotion: hope scroll to vaarglan
+  COPY_EXISTING ~vaarglan.cre~ ~override~
+    ADD_CRE_ITEM ~scemot~ #0 #0 #0 ~NONE~ ~INV1 INV2 INV3 INV4 INV5 INV6 INV7 INV8 INV9 INV10 INV11 INV12 INV13 INV14 INV15 INV16~
+    BUT_ONLY_IF_IT_CHANGES
+  
+  // add scales to icasa
+  COPY_EXISTING ~icasa.cre~ ~override~
+    ADD_CRE_ITEM ~cdscales~ #0 #0 #0 ~UNSTEALABLE~ ~INV1 INV2 INV3 INV4 INV5 INV6 INV7 INV8 INV9 INV10 INV11 INV12 INV13 INV14 INV15 INV16~
+    BUT_ONLY_IF_IT_CHANGES
+
+  // add remorrhaz shells to remorrhazs
+  COPY_EXISTING ~remorha.cre~  ~override~
+                ~remorhas.cre~ ~override~
+                ~remorhh.cre~  ~override~
+                ~rndremor.cre~ ~override~
+    ADD_CRE_ITEM ~cdrem~ #0 #0 #0 ~UNSTEALABLE~ ~INV1 INV2 INV3 INV4 INV5 INV6 INV7 INV8 INV9 INV10 INV11 INV12 INV13 INV14 INV15 INV16~
+    BUT_ONLY_IF_IT_CHANGES
+
+  // ballad of daen winterbrush
+  COPY ~iu_iwd/itm/cddaen.itm~   ~override~
+    SAY 0x08 @1043 // unidentified name
+    SAY 0x0c @1043 // identified name
+    WRITE_LONG  0x34 30 // price
+    WRITE_SHORT 0x42  0 // lore
+    SAY 0x50 @1044 // unidentified description
+    SAY 0x54 @1044 // identified description
+    
+  // post-upgrade ballad
+  COPY_EXISTING ~cddaen.itm~ ~override/cddaen2.itm~
+    WRITE_SHORT 0xec 0 // doesn't summon any more
+
+  // make upgraded cynicism
+  COPY_EXISTING ~cynicis.itm~ ~override/cdgloom.itm~
+    SAY 0x08 @1016 // unidentified name
+    SAY 0x0c @1016 // identified name
+    WRITE_SHORT 0x42 0 // lore
+    SAY 0x50 @1017 // unidentified description
+    SAY 0x54 @1017 // identified description
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    // kill equipping strings
+    FOR (index = 0 ; index < fx_num ; index = index + 1) BEGIN // cycle through effects
+      READ_SHORT ("%fx_off%" +        ("%index%" * 0x30)) "opcode"
+      PATCH_IF ((("%opcode%" = 283) AND ("%iwd-in-bg2%" = 0)) OR      // display string head, IWD
+                (("%opcode%" = 139) AND ("%iwd-in-bg2%" = 1)))  BEGIN // display string head, conversion
+        WRITE_SHORT ("%fx_off%" +        ("%index%" * 0x30)) 0 // probabilities
+      END
+    END
+    // kill strings on melee
+    FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+      READ_BYTE ("%abil_off%" +        ("%index3%" * 0x38)) "abil_type"
+      PATCH_IF ("%abil_type%" = 1) BEGIN // nuke melee criticisms
+        READ_SHORT ("%abil_off%" + 0x1e + ("%index3%" * 0x38)) "abil_fx_num"
+        READ_SHORT ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) "abil_fx_idx"
+        FOR (index2 = 0 ; index2 < abil_fx_num ; index2 = index2 + 1) BEGIN // cycle through effects
+          READ_SHORT ("%fx_off%" +        (("%abil_fx_idx%" + "%index2%") * 0x30)) "opcode"
+          PATCH_IF ("%opcode%" = 283) BEGIN // display string head
+            WRITE_SHORT ("%fx_off%" + 0x12 + (("%abil_fx_idx%" + "%index2%") * 0x30)) 0 // probabilities
+          END
+        END
+      END ELSE
+      PATCH_IF ("%abil_type%" = 3) BEGIN // magical abilities
+        WRITE_SHORT ("%abil_off%" + 0x22 + ("%index3%" * 0x38)) 2 // two charges
+      END
+    END
+
+  // improved myrloch vale
+  COPY_EXISTING ~myrloch.itm~ ~override/cdmyr.itm~
+    WRITE_SHORT 0x42 0 // lore
+    SAY 0x50 @1019  // unidentified description
+    SAY 0x54 @1019  // identified description
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    SET "delta" = 1
+    // first increase existing lore bonus
+    FOR (index = 0 ; index < fx_num ; index = index + 1) BEGIN
+      READ_SHORT ("%fx_off%" +        ("%index%" * 0x30)) "opcode"
+      PATCH_IF ("%opcode%" = 21) BEGIN // lore bonus
+        WRITE_LONG  ("%fx_off%" + 0x04 + ("%index%" * 0x30)) 30 // lore bonus
+      END
+    END
+    // insert new effect
+    INSERT_BYTES  ("%fx_off%"       ) 0x30
+      WRITE_SHORT ("%fx_off%"       )  6 // charisma bonus
+      WRITE_BYTE  ("%fx_off%" + 0x02)   1 // target: self
+      WRITE_LONG  ("%fx_off%" + 0x04)   1 // +1
+      WRITE_BYTE  ("%fx_off%" + 0x0c)   2 // instant/while equipped
+      WRITE_BYTE  ("%fx_off%" + 0x12) 100 // probability
+    // adjust indices on abilities
+    FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+      READ_SHORT  ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) "abil_fx_idx"
+      WRITE_SHORT ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) ("%abil_fx_idx%" + "%delta%")
+    END
+    WRITE_SHORT 0x70 ("%fx_num%" + "%delta%")
+    
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN // if IWD-in-BG2 instead of true IWD...
+
+    // add protection from divine FoD
+    COPY_EXISTING ~mystery.itm~ ~override~
+      READ_LONG  0x64 "abil_off"
+      READ_SHORT 0x68 "abil_num"
+      READ_LONG  0x6a "fx_off"
+      READ_SHORT 0x70 "fx_num"
+      SET "delta" = 1
+      // insert new effect
+      INSERT_BYTES  ("%fx_off%"       ) 0x30
+        WRITE_SHORT ("%fx_off%"       ) 206       // protection from spell
+        WRITE_BYTE  ("%fx_off%" + 0x02)   1       // target: self
+        WRITE_BYTE  ("%fx_off%" + 0x0c)   2       // instant/while equipped
+        WRITE_BYTE  ("%fx_off%" + 0x12) 100       // probability
+        WRITE_ASCII ("%fx_off%" + 0x14) ~sppr708~ // priest finger of death
+      // adjust indices on abilities
+      FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+        READ_SHORT  ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) "abil_fx_idx"
+        WRITE_SHORT ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) ("%abil_fx_idx%" + "%delta%")
+      END
+      WRITE_SHORT 0x70 ("%fx_num%" + "%delta%")
+      BUT_ONLY
+      
+  END
+
+  // improved mystery of the dead
+  COPY_EXISTING ~mystery.itm~ ~override/cdmyst.itm~
+    WRITE_SHORT 0x42 0 // lore
+    SAY 0x50 @1018  // unidentified description
+    SAY 0x54 @1018  // identified description
+    READ_LONG   0x64 "abil_off"
+    READ_SHORT  0x68 "abil_num"
+    WRITE_SHORT 0x68 ("%abil_num%" + 2)
+    READ_LONG   0x6a "fx_off"
+    WRITE_LONG  0x6a ("%fx_off%" + 0x70)
+    READ_SHORT  0x70 "fx_num"
+    PATCH_IF ("%abil_num%" != 0) BEGIN
+      READ_SHORT ("%abil_off%" + 0x1e + (("%abil_num%" - 1) * 0x38)) "last_fx_num"
+      READ_SHORT ("%abil_off%" + 0x20 + (("%abil_num%" - 1) * 0x38)) "last_fx_idx"
+      SET "new_fx" = ("%last_fx_idx%" + "%last_fx_num%")
+    END ELSE BEGIN
+      SET "new_fx" = "%fx_num%"
+    END
+    INSERT_BYTES  ("%fx_off%" +        ("%new_fx%" * 0x30)) 0x30      // new effect
+      WRITE_SHORT ("%fx_off%" +        ("%new_fx%" * 0x30)) 146       // cast spell
+      WRITE_BYTE  ("%fx_off%" + 0x02 + ("%new_fx%" * 0x30)) 1         // target: self
+      WRITE_LONG  ("%fx_off%" + 0x04 + ("%new_fx%" * 0x30)) 11        // cast at level
+      WRITE_BYTE  ("%fx_off%" + 0x0c + ("%new_fx%" * 0x30)) 1         // instant/permanent till death
+      WRITE_BYTE  ("%fx_off%" + 0x12 + ("%new_fx%" * 0x30)) 100       // probability
+      PATCH_IF ("%iwd-in-bg2%" = 0) BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x14 + ("%new_fx%" * 0x30)) ~sppr516~ // resref
+      END ELSE BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x14 + ("%new_fx%" * 0x30)) ~sppr519~ // resref
+      END
+    INSERT_BYTES  ("%fx_off%" +        ("%new_fx%" * 0x30)) 0x30      // new effect
+      WRITE_SHORT ("%fx_off%" +        ("%new_fx%" * 0x30)) 146       // cast spell
+      WRITE_BYTE  ("%fx_off%" + 0x02 + ("%new_fx%" * 0x30)) 2         // target: preset target
+      WRITE_LONG  ("%fx_off%" + 0x04 + ("%new_fx%" * 0x30)) 9         // cast at level
+      WRITE_BYTE  ("%fx_off%" + 0x0c + ("%new_fx%" * 0x30)) 1         // instant/permanent till death
+      WRITE_BYTE  ("%fx_off%" + 0x12 + ("%new_fx%" * 0x30)) 100       // probability
+      WRITE_ASCII ("%fx_off%" + 0x14 + ("%new_fx%" * 0x30)) ~sppr502~ // resref
+    INSERT_BYTES  ("%fx_off%"       ) 0x38             // new ability
+      WRITE_BYTE  ("%fx_off%"       ) 3                // magical
+      WRITE_BYTE  ("%fx_off%" + 0x01) 1                // ID to use
+      WRITE_SHORT ("%fx_off%" + 0x02) 3                // in item slots
+      PATCH_IF ("%iwd-in-bg2%" = 0) BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x04) ~sppr516b~       // ability icon
+      END ELSE BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x04) ~#ppr516b~       // ability icon
+      END
+      WRITE_SHORT ("%fx_off%" + 0x0c) 5                // target: caster
+      WRITE_SHORT ("%fx_off%" + 0x0e) 1                // range
+      WRITE_SHORT ("%fx_off%" + 0x1e) 1                // num effects
+      WRITE_SHORT ("%fx_off%" + 0x20) ("%new_fx%" + 1) // fx index
+      WRITE_SHORT ("%fx_off%" + 0x22) 1                // num charges: 1
+      WRITE_BYTE  ("%fx_off%" + 0x24) 3                // recharges daily
+      WRITE_BYTE  ("%fx_off%" + 0x27) 8                // after resting
+      WRITE_SHORT ("%fx_off%" + 0x2a) 1                // projectile: none
+    INSERT_BYTES  ("%fx_off%"       ) 0x38         // new ability
+      WRITE_BYTE  ("%fx_off%"       ) 3            // magical
+      WRITE_BYTE  ("%fx_off%" + 0x01) 1            // ID to use
+      WRITE_SHORT ("%fx_off%" + 0x02) 3            // in item slots
+      PATCH_IF ("%iwd-in-bg2%" = 0) BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x04) ~sppr502b~   // ability icon
+      END ELSE BEGIN
+        WRITE_ASCII ("%fx_off%" + 0x04) ~#ppr502b~   // ability icon
+      END
+      WRITE_SHORT ("%fx_off%" + 0x0c) 1            // target: living actor
+      WRITE_SHORT ("%fx_off%" + 0x0e) 1            // range
+      WRITE_SHORT ("%fx_off%" + 0x1e) 1            // num effects
+      WRITE_SHORT ("%fx_off%" + 0x20) ("%new_fx%") // fx index
+      WRITE_SHORT ("%fx_off%" + 0x22) 1            // num charges: 1
+      WRITE_BYTE  ("%fx_off%" + 0x24) 3            // recharges daily
+      WRITE_BYTE  ("%fx_off%" + 0x27) 8            // after resting
+      WRITE_SHORT ("%fx_off%" + 0x2a) 1            // projectile: none
+
+  // quiver of plenty
+  COPY ~iu_iwd/itm/cdqbow.itm~   ~override~
+    SAY 0x08 @1002 // unidentified name
+    SAY 0x0c @1002 // identified name
+    SAY 0x50 @1003 // unidentified description
+    SAY 0x54 @1003 // identified description
+  
+  // bag of plenty
+  COPY ~iu_iwd/itm/cdqsling.itm~ ~override~
+    SAY 0x08 @1006 // unidentified name
+    SAY 0x0c @1006 // identified name
+    SAY 0x50 @1007 // unidentified description
+    SAY 0x54 @1007 // identified description
+  
+  // case of plenty
+  COPY ~iu_iwd/itm/cdqxbow.itm~  ~override~
+    SAY 0x08 @1004 // unidentified name
+    SAY 0x0c @1004 // identified name
+    SAY 0x50 @1005 // unidentified description
+    SAY 0x54 @1005 // identified description
+
+  // remorrhaz helm
+  COPY ~iu_iwd/itm/cdrelm.itm~  ~override~
+    SAY 0x08 @1014 // unidentified name
+    SAY 0x0c @1014 // identified name
+    SAY 0x50 @1015 // unidentified description
+    SAY 0x54 @1015 // identified description
+  
+  // remorrhaz shell
+  COPY_EXISTING ~misc12.itm~ ~override/cdrem.itm~
+    SAY 0x08 @1023 // unidentified name
+    SAY 0x0c @1023 // identified name
+    WRITE_ASCII 0x3a ~cdrem~  #8 // icon
+    WRITE_ASCII 0x44 ~cdremg~ #8 // ground icon
+    SAY 0x50 @1030 // unidentified description
+    SAY 0x54 @1030 // identified description
+
+  // white dragon scale armor
+  COPY ~iu_iwd/itm/cdscale.itm~  ~override~
+    SAY 0x08 @1010 // unidentified name
+    SAY 0x0c @1010 // identified name
+    SAY 0x50 @1011 // unidentified description
+    SAY 0x54 @1011 // identified description
+  
+  // white dragon scales
+  COPY ~iu_iwd/itm/cdscales.itm~ ~override~
+    SAY 0x08 @1008 // unidentified name
+    SAY 0x0c @1008 // identified name
+    SAY 0x50 @1009 // unidentified description
+    SAY 0x54 @1009 // identified description
+
+  // improved bren muller's crossbow
+  COPY_EXISTING ~lxbowbm.itm~ ~override/cdxbowbm.itm~
+    WRITE_SHORT 0x42 0 // lore
+    SAY 0x50 @1021  // unidentified description
+    SAY 0x54 @1021  // identified description
+    READ_ASCII 0x3a "icon" (8)
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    WRITE_SHORT 0x68 ("%abil_num%" + 1)
+    READ_LONG  0x6a "fx_off"
+    WRITE_LONG  0x6a ("%fx_off%" + 0x38)
+    READ_SHORT 0x70 "fx_num"
+    READ_SHORT ("%abil_off%" + 0x1e + (("%abil_num%" - 1) * 0x38)) "last_fx_num"
+    READ_SHORT ("%abil_off%" + 0x20 + (("%abil_num%" - 1) * 0x38)) "last_fx_idx"
+    SET "new_fx" = ("%last_fx_idx%" + "%last_fx_num%")
+    INSERT_BYTES            ("%fx_off%" +        ("%new_fx%" * 0x30)) 0x30 // new effect
+      WRITE_SHORT           ("%fx_off%" +        ("%new_fx%" * 0x30)) 142  // display portrait icon
+      WRITE_BYTE            ("%fx_off%" + 0x02 + ("%new_fx%" * 0x30)) 1    // target: self
+      WRITE_LONG            ("%fx_off%" + 0x08 + ("%new_fx%" * 0x30)) 17   // bless
+      WRITE_LONG            ("%fx_off%" + 0x0e + ("%new_fx%" * 0x30)) (12 + (2 * "%iwd-in-bg2%"))   // duration
+      WRITE_BYTE            ("%fx_off%" + 0x12 + ("%new_fx%" * 0x30)) 100  // probability
+    INSERT_BYTES            ("%fx_off%" +        ("%new_fx%" * 0x30)) 0x30 // new effect
+      WRITE_SHORT           ("%fx_off%" +        ("%new_fx%" * 0x30)) 167  // missile thac0 bonus
+      WRITE_BYTE            ("%fx_off%" + 0x02 + ("%new_fx%" * 0x30)) 1    // target: self
+      WRITE_LONG            ("%fx_off%" + 0x04 + ("%new_fx%" * 0x30)) 5    // bonus
+      WRITE_LONG            ("%fx_off%" + 0x0e + ("%new_fx%" * 0x30)) (12 + (2 * "%iwd-in-bg2%"))   // duration
+      WRITE_BYTE            ("%fx_off%" + 0x12 + ("%new_fx%" * 0x30)) 100  // probability
+    INSERT_BYTES   ("%fx_off%"       ) 0x38         // new ability
+      WRITE_BYTE   ("%fx_off%"       ) 3            // magical
+      WRITE_BYTE   ("%fx_off%" + 0x01) 1            // ID to use
+      WRITE_SHORT  ("%fx_off%" + 0x02) 3            // in item slots
+      WRITE_ASCIIE ("%fx_off%" + 0x04) "%icon%" #8  // ability icon
+      WRITE_SHORT  ("%fx_off%" + 0x0c) 5            // target: caster
+      WRITE_SHORT  ("%fx_off%" + 0x0e) 1            // range: 1
+      WRITE_SHORT  ("%fx_off%" + 0x1e) 2            // num effects: 2
+      WRITE_SHORT  ("%fx_off%" + 0x20) ("%new_fx%") // fx index
+      WRITE_SHORT  ("%fx_off%" + 0x22) 1            // num charges: 1
+      WRITE_BYTE   ("%fx_off%" + 0x24) 3            // recharges daily
+      WRITE_BYTE   ("%fx_off%" + 0x27) 8            // after resting
+      WRITE_SHORT  ("%fx_off%" + 0x2a) 1            // projectile: none
+
+  // improved young rage
+  COPY_EXISTING ~young.itm~  ~override/cdyoung.itm~
+    WRITE_SHORT 0x42 0 // lore
+    SAY 0x50 @1020  // unidentified description
+    SAY 0x54 @1020  // identified description
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    // adjust indices on abilities
+    FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+      READ_BYTE ("%abil_off%" +        ("%index3%" * 0x38)) "abil_type"
+      PATCH_IF ("%abil_type%" = 1) BEGIN // nuke melee criticisms
+        READ_SHORT ("%abil_off%" + 0x1e + ("%index3%" * 0x38)) "abil_fx_num"
+        READ_SHORT ("%abil_off%" + 0x20 + ("%index3%" * 0x38)) "abil_fx_idx"
+        FOR (index2 = 0 ; index2 < abil_fx_num ; index2 = index2 + 1) BEGIN // cycle through effects
+          READ_SHORT ("%fx_off%" +        (("%abil_fx_idx%" + "%index2%") * 0x30)) "opcode"
+          PATCH_IF (("%opcode%" = 3) OR ("%opcode%" = 139) OR ("%opcode%" = 142)) BEGIN // berserking
+            WRITE_SHORT ("%fx_off%" + 0x12 + (("%abil_fx_idx%" + "%index2%") * 0x30)) 0 // probabilities
+          END
+        END
+      END ELSE
+      PATCH_IF ("%abil_type%" = 3) BEGIN // magical abilities
+        WRITE_SHORT ("%abil_off%" + 0x22 + ("%index3%" * 0x38)) 2 // two charges
+      END
+    END
+
+  // note for edion
+  COPY_EXISTING ~misc78.itm~ ~override/cdyoungn.itm~
+    SAY 0x08 @1040 // unidentified name
+    SAY 0x0c @1040 // identified name
+    SAY 0x50 @1041 // unidentified description
+    SAY 0x54 @1041 // identified description
+    
+  // nerf existing cynicism a bit
+  COPY_EXISTING ~cynicis.itm~ ~override~
+    SAY 0x54 @1039 // identified description
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    // adjust indices on abilities
+    FOR (index3 = 0 ; index3 < abil_num ; index3 = index3 + 1) BEGIN
+      READ_BYTE  ("%abil_off%" +        ("%index3%" * 0x38)) "abil_type"
+      PATCH_IF ("%abil_type%" = 1) BEGIN // melee
+        WRITE_SHORT ("%abil_off%" + 0x14 + ("%index3%" * 0x38)) 2 // reduce to-hit bonus
+      END
+    END
+    BUT_ONLY_IF_IT_CHANGES
+
+  COPY_EXISTING ~emmeric.sto~ ~override~
+    ADD_STORE_ITEM ~cdqsling~ AFTER ~xbow04~ #0 #0 #0 ~IDENTIFIED~ #1 // bag o' plenty
+    ADD_STORE_ITEM ~cdqxbow~  AFTER ~xbow04~ #0 #0 #0 ~IDENTIFIED~ #1 // case o' plenty
+    ADD_STORE_ITEM ~cdqbow~   AFTER ~xbow04~ #0 #0 #0 ~IDENTIFIED~ #1 // quiver o' plenty
+    BUT_ONLY_IF_IT_CHANGES
+
+  COPY ~iu_iwd/audio/cddaen.wav~ ~override~
+
+  // vexed upgrade
+
+  // if IWD-in-BG2 instead of true IWD...
+  ACTION_IF ("%iwd-in-bg2%" = 1) THEN BEGIN
+  
+    COPY ~iu_iwd/dlg/vexing.d~ ~iu_iwd/dlg/vexing.d~
+      REPLACE_EVALUATE ~#\([0-9]+\)~ BEGIN
+        SET "RESULT" = ("%MATCH1%" + 74100) // adjust strrefs
+      END ~#%RESULT%~
+  
+    COPY ~iu_iwd/baf/cdvexcut.baf~ ~iu_iwd/baf/cdvexcut.baf~
+      REPLACE_TEXTUALLY ~HideCreature(Myself,TRUE)~ 
+        ~GiveItemCreate("mage06",Myself,1,1,1)  EquipItem("mage06")~
+      REPLACE_TEXTUALLY ~ChangeAnimation("cdvex")~ 
+        ~CreateCreature("cdvex",[-1.-1],0) DestroySelf()~
+
+  END
+  
+  COMPILE ~iu_iwd/dlg/vexing.d~
+  COMPILE ~iu_iwd/baf/cdvexcut.baf~
+  
+  COPY_EXISTING ~vexing.cre~ ~override/cdvex.cre~
+    WRITE_ASCII 0x248 ~efdlgf~ #8
+    WRITE_ASCII (0x334 - ("%iwd-in-bg2%" * 0x68)) ~cdvex~ #8
+  
+END
+
+
+/////                                                  \\\\\
+///// totl                                             \\\\\
+/////                                                  \\\\\
+
+/*
+ACTION_IF FILE_EXISTS_IN_GAME ~ar9700.are~ THEN BEGIN // totl
+
+  // full genie flask
+  COPY ~iu_iwd/itm/cdgenie.itm~  ~override~
+    SAY 0x08 #15326 // unidentified name
+    SAY 0x0c #15326 // identified name
+    SAY 0x50 @1022  // unidentified description
+    SAY 0x54 @1022  // identified description
+
+END
+*/
+
+/////                                                  \\\\\
+///// tweaks compatibility                             \\\\\
+/////                                                  \\\\\
+
+ACTION_IF (FILE_EXISTS_IN_GAME ~cdi00010.g3~) AND (FILE_EXISTS_IN_GAME ~ar9100.are~) THEN BEGIN // remove helmet animations
+
+  COPY_EXISTING ~cdrelm.itm~ ~override~
+    WRITE_SHORT 0x22 0
+    BUT_ONLY_IF_IT_CHANGES
+
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi00050.g3~ THEN BEGIN // remove equipping icons
+
+  COPY_EXISTING ~cdscale.itm~ ~override~
+                ~cdwuff.itm~  ~override~
+    READ_LONG  0x6a "fx_off" ELSE 0
+    READ_SHORT 0x70 "fx_num" ELSE 0
+    FOR (index = 0 ; index < fx_num ; index = index + 1) BEGIN
+      READ_SHORT ("%fx_off%" +        ("%index%" * 0x30)) "type"
+      READ_BYTE  ("%fx_off%" + 0x0c + ("%index%" * 0x30)) "timing"
+      PATCH_IF (("%type%" = 142) AND ("%timing%" = 2)) BEGIN // display portrait icon and instant/while equipped
+        WRITE_BYTE  ("%fx_off%" + 0x12 + ("%index%" * 0x30)) 0 // high probability
+        WRITE_BYTE  ("%fx_off%" + 0x13 + ("%index%" * 0x30)) 0 // low probability
+      END
+    END
+    BUT_ONLY_IF_IT_CHANGES
+
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi00060.g3~ THEN BEGIN // better icons
+
+  // elven chain
+  COPY_EXISTING ~cdechain.itm~ ~override~
+    WRITE_ASCII 0x44 ~cdgelchn~
+    BUT_ONLY_IF_IT_CHANGES
+
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi02040.g3~ THEN BEGIN // allow thief skills and stealth in heavy armor
+
+  // language-specific text replacement macroes from tweaks
+  INCLUDE ~G3DaleTweaks/lib/extra_regexp_vars.tpa~
+  INCLUDE ~G3DaleTweaks/languages/english/thieving_descripts.tpa~
+
+  COPY_EXISTING ~cdechain.itm~ ~override~ // elven chain
+                ~cdharmor.itm~ ~override~ // hide armor
+                ~cdscale.itm~  ~override~ // white dragon scale
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    SET "delta" = 0
+    SET "patch_hide" = 0
+    PATCH_IF ("%SOURCE_RES%" STRING_COMPARE_CASE "cdechain" = 0) BEGIN // elven chain mail
+      SET "penalty_hide" = 10
+      SET "penalty_pickpocket" = 20
+      SET "penalty_lock" = 5
+      SET "penalty_trap" = 5
+    END ELSE
+    PATCH_IF ("%SOURCE_RES%" STRING_COMPARE_CASE "cdharmor" = 0) BEGIN // yeti hide
+      SET "penalty_hide" = 20
+      SET "penalty_pickpocket" = 60
+      SET "penalty_lock" = 50
+      SET "penalty_trap" = 50
+    END ELSE BEGIN
+//    PATCH_IF ("%SOURCE_RES%" STRING_COMPARE_CASE "cdscale" = 0) BEGIN // white dragon scale
+      SET "penalty_hide" = 50
+      SET "penalty_pickpocket" = 50
+      SET "penalty_lock" = 20
+      SET "penalty_trap" = 20
+    END
+    FOR (index = fx_num - 1 ; index >= 0 ; index = index - 1) BEGIN
+      READ_SHORT ("%fx_off%" +        ("%index%" * 0x30)) "effect"
+      READ_LONG  ("%fx_off%" + 0x04 + ("%index%" * 0x30)) "value"
+      READ_LONG  ("%fx_off%" + 0x08 + ("%index%" * 0x30)) "button"
+      PATCH_IF ("%value%" < 0) BEGIN // if existing thief skill penalties exist, negates them--all thieving penalties
+        SET "value" = 0              // I've encountered so far have been attributed to armor, so this eliminates duplication
+      END
+      PATCH_IF (("%effect%" = 144) AND ("%button%" = 0)) BEGIN // this removes the disable stealth button effect, if present
+        DELETE_BYTES ("%fx_off%" + ("%index%" * 0x30)) 0x30
+        SET "delta" = ("%delta%" - 1)
+      END ELSE
+      PATCH_IF (("%effect%" = 144) AND ("%button%" = 1)) BEGIN // this removes the disable thieving skill button effect, if present
+        DELETE_BYTES ("%fx_off%" + ("%index%" * 0x30)) 0x30
+        SET "delta" = ("%delta%" - 1)
+      END
+    END
+    INSERT_BYTES  ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 0x30
+      WRITE_SHORT ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 59  // type
+      WRITE_BYTE  ("%fx_off%" + 0x02 + (("%fx_num%" + "%delta%") * 0x30)) 1   // target
+      WRITE_LONG  ("%fx_off%" + 0x04 + (("%fx_num%" + "%delta%") * 0x30)) (0 - "%penalty_hide%") // value
+      WRITE_BYTE  ("%fx_off%" + 0x0c + (("%fx_num%" + "%delta%") * 0x30)) 2   // while equipped
+      WRITE_BYTE  ("%fx_off%" + 0x12 + (("%fx_num%" + "%delta%") * 0x30)) 100 // probability
+    INSERT_BYTES  ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 0x30
+      WRITE_SHORT ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 92  // type
+      WRITE_BYTE  ("%fx_off%" + 0x02 + (("%fx_num%" + "%delta%") * 0x30)) 1   // target
+      WRITE_LONG  ("%fx_off%" + 0x04 + (("%fx_num%" + "%delta%") * 0x30)) (0 - "%penalty_pickpocket%") // value
+      WRITE_BYTE  ("%fx_off%" + 0x0c + (("%fx_num%" + "%delta%") * 0x30)) 2   // while equipped
+      WRITE_BYTE  ("%fx_off%" + 0x12 + (("%fx_num%" + "%delta%") * 0x30)) 100 // probability
+    INSERT_BYTES  ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 0x30
+      WRITE_SHORT ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 90  // type
+      WRITE_BYTE  ("%fx_off%" + 0x02 + (("%fx_num%" + "%delta%") * 0x30)) 1   // target
+      WRITE_LONG  ("%fx_off%" + 0x04 + (("%fx_num%" + "%delta%") * 0x30)) (0 - "%penalty_lock%") // value
+      WRITE_BYTE  ("%fx_off%" + 0x0c + (("%fx_num%" + "%delta%") * 0x30)) 2   // while equipped
+      WRITE_BYTE  ("%fx_off%" + 0x12 + (("%fx_num%" + "%delta%") * 0x30)) 100 // probability
+    INSERT_BYTES  ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 0x30
+      WRITE_SHORT ("%fx_off%"        + (("%fx_num%" + "%delta%") * 0x30)) 91  // type
+      WRITE_BYTE  ("%fx_off%" + 0x02 + (("%fx_num%" + "%delta%") * 0x30)) 1   // target
+      WRITE_LONG  ("%fx_off%" + 0x04 + (("%fx_num%" + "%delta%") * 0x30)) (0 - "%penalty_trap%") // value
+      WRITE_BYTE  ("%fx_off%" + 0x0c + (("%fx_num%" + "%delta%") * 0x30)) 2   // while equipped
+      WRITE_BYTE  ("%fx_off%" + 0x12 + (("%fx_num%" + "%delta%") * 0x30)) 100 // probability
+    SET "delta" = ("%delta%" + 4)
+    FOR (index2 = 0 ; index2 < abil_num ; index2 = index2 + 1) BEGIN // if abilities are present, need to adjust their effects index
+      READ_SHORT  ("%abil_off%" + 0x20 + ("%index2%" * 0x38)) "abil_fx_index"
+      WRITE_SHORT ("%abil_off%" + 0x20 + ("%index2%" * 0x38)) ("%abil_fx_index%" + "%delta%")
+    END
+    WRITE_SHORT 0x70 ("%fx_num%" + "%delta%")
+    // adjust descripts
+    FOR (index = 0x50 ; index < 0x55 ; index = index + 0x04) BEGIN
+      READ_LONG "%index%" "valid"
+      PATCH_IF ("%valid%" < 2147483646) AND ("%valid%" >= 0) BEGIN
+        READ_STRREF "%index%" "description"
+        INNER_PATCH ~%description%~ BEGIN
+          LAUNCH_PATCH_MACRO ~thieving_descripts_english~
+          REPLACE_TEXTUALLY ~CDPERCENTAGE~ ~%~
+          SET char = 0 // different than the check
+          FOR (i = 0; char != 0xfafa; i += 1) BEGIN
+            READ_BYTE i char ELSE 0xfafa // if out of bounds, read my custom EOF signal/value
+          END
+          READ_ASCII 0 description (i - 1)
+        END
+        SAY_EVALUATED "%index%" ~%description%~
+      END
+    END
+    BUT_ONLY_IF_IT_CHANGES
+
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi02050.g3~ THEN BEGIN // allow arcane spellcasting in armor
+
+  // language-specific text replacement macroes
+  INCLUDE ~G3DaleTweaks/lib/extra_regexp_vars.tpa~
+  INCLUDE ~G3DaleTweaks/languages/english/arcane_descripts.tpa~
+
+  COPY_EXISTING ~cdharmor.itm~ ~override~ // yeti hide armor
+                ~cdscale.itm~  ~override~ // white dragon scale
+    READ_LONG  0x64 "abil_off"
+    READ_SHORT 0x68 "abil_num"
+    READ_LONG  0x6a "fx_off"
+    READ_SHORT 0x70 "fx_num"
+    SET "patch_miscast" = 20
+    FOR (index = 0 ; index < fx_num ; index = index + 1) BEGIN // this major FOR loop examines existing effects and adjusts them accordingly
+      READ_SHORT ("%fx_off%" + (("%index%") * 0x30)) "effect"
+      PATCH_IF ("%effect%" = 145) BEGIN // this loop converts the disable spellcasting to a miscast penalty
+        WRITE_ASCII ("%fx_off%" +        ("%index%" * 0x30)) ~~ #48           // zeroes existing effect
+        WRITE_SHORT ("%fx_off%" +        ("%index%" * 0x30)) 60                // casting failure
+        WRITE_BYTE  ("%fx_off%" + 0x02 + ("%index%" * 0x30)) 1                 // target self
+        WRITE_LONG  ("%fx_off%" + 0x04 + ("%index%" * 0x30)) "%patch_miscast%" // penalty
+        WRITE_BYTE  ("%fx_off%" + 0x0c + ("%index%" * 0x30)) 2                 // instant/while equipped
+        WRITE_BYTE  ("%fx_off%" + 0x12 + ("%index%" * 0x30)) 100               // probability 1
+      END
+    END
+    FOR (index = 0x50 ; index < 0x55 ; index = index + 0x04) BEGIN
+      READ_LONG "%index%" "valid"
+      PATCH_IF ("%valid%" < 2147483646) AND ("%valid%" >= 0) BEGIN
+        READ_STRREF "%index%" "description"
+        INNER_PATCH ~%description%~ BEGIN
+          LAUNCH_PATCH_MACRO ~arcane_descripts_english~
+          SET char = 0 // different than the check
+          FOR (i = 0; char != 0xfafa; i += 1) BEGIN
+            READ_BYTE i char ELSE 0xfafa // if out of bounds, read my custom EOF signal/value
+          END
+          READ_ASCII 0 description (i - 1)
+        END
+        SAY_EVALUATED "%index%" ~%description%~
+      END
+    END
+    BUT_ONLY_IF_IT_CHANGES
+
+END
+
+ACTION_IF NOT FILE_EXISTS_IN_GAME ~cdi02061.g3~ THEN BEGIN // if no magic item wearing restrictions...
+
+  APPEND ~itemexcl.2da~ ~cdscale   1~ // add white dragon scale to exclusion list
+
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi02170.g3~ THEN BEGIN // loosen equipment restrictions for druid/cleric multis
+
+    //Alignment changes
+  COPY_EXISTING ~cdgloom.itm~  ~override~
+                ~cdmyr.itm~    ~override~
+                ~cdqbow.itm~   ~override~
+                ~cdqsling.itm~ ~override~
+                ~cdqxbow.itm~  ~override~
+                ~cdrdart.itm~  ~override~
+                ~cdrdagg.itm~  ~override~
+                ~cdxbowbm.itm~ ~override~
+                ~cdyoung.itm~  ~override~
+    READ_BYTE 0x1f "use2" ELSE 0b11111111
+    READ_BYTE 0x20 "use3" ELSE 0b11111111
+    PATCH_IF (("%use2%" BAND 0b00001000) = 0b00000000) BEGIN // if usable by single-class fighters...
+      SET "use2" = ("%use2%" BAND 0b00101111) // make usable by fd, fc, fmc
+    END
+    PATCH_IF (("%use3%" BAND 0b00000100) = 0b00000000) BEGIN // if usable by single-class mages...
+      SET "use2" = ("%use2%" BAND 0b01111110) // make usable by mc, fmc
+    END
+    PATCH_IF (("%use3%" BAND 0b01000000) = 0b00000000) BEGIN // if usable by single-class thieves...
+      SET "use2" = ("%use2%" BAND 0b11111101) // make usable by ct
+    END
+    PATCH_IF (("%use3%" BAND 0b00100000) = 0b00000000) BEGIN // if usable by single-class rangers...
+      SET "use2" = ("%use2%" BAND 0b11111011) // make usable by cr
+    END
+    WRITE_BYTE 0x1f "%use2%"
+    WRITE_BYTE 0x20 "%use3%"
+    BUT_ONLY_IF_IT_CHANGES
+    
+END
+
+ACTION_IF FILE_EXISTS_IN_GAME ~cdi02170.g3~ THEN BEGIN // loosen equipment restrictions for druid/cleric multis
+
+    //Alignment changes
+  COPY_EXISTING ~cdgloom.itm~  ~override~
+                ~cdmyr.itm~    ~override~
+                ~cdqbow.itm~   ~override~
+                ~cdqsling.itm~ ~override~
+                ~cdqxbow.itm~  ~override~
+                ~cdrdart.itm~  ~override~
+                ~cdrdagg.itm~  ~override~
+                ~cdxbowbm.itm~ ~override~
+                ~cdyoung.itm~  ~override~
+    READ_BYTE 0x1f "use2" ELSE 0b11111111
+    READ_BYTE 0x20 "use3" ELSE 0b11111111
+    PATCH_IF (("%use2%" BAND 0b00001000) = 0b00000000) BEGIN // if usable by single-class fighters...
+      SET "use2" = ("%use2%" BAND 0b00101111) // make usable by fd, fc, fmc
+    END
+    PATCH_IF (("%use3%" BAND 0b00000100) = 0b00000000) BEGIN // if usable by single-class mages...
+      SET "use2" = ("%use2%" BAND 0b01111110) // make usable by mc, fmc
+    END
+    PATCH_IF (("%use3%" BAND 0b01000000) = 0b00000000) BEGIN // if usable by single-class thieves...
+      SET "use2" = ("%use2%" BAND 0b11111101) // make usable by ct
+    END
+    PATCH_IF (("%use3%" BAND 0b00100000) = 0b00000000) BEGIN // if usable by single-class rangers...
+      SET "use2" = ("%use2%" BAND 0b11111011) // make usable by cr
+    END
+    WRITE_BYTE 0x1f "%use2%"
+    WRITE_BYTE 0x20 "%use3%"
+    BUT_ONLY_IF_IT_CHANGES
+    
+END
