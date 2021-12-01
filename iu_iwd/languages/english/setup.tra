@@ -7,6 +7,7 @@
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 
    @0 = ~Item Upgrade for Icewind Dale~
+   @1 = ~This mod does not work or is already installed on your game.~
 
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
@@ -116,7 +117,7 @@ THAC0:  +4
 Damage Type: Slashing
 Special:  Find Traps 2/Day, Knock 2/Day
 Weight: 4
-Speed Factor: 5
+Speed Factor: 1
 Proficiency Type: Large Swords
 Type: 1-handed
 Not Usable By:
@@ -156,7 +157,7 @@ Special:
   +1 Charisma while equipped
 Damage Type:  Slashing
 Weight:  4
-Speed Factor:  4
+Speed Factor:  2
 Proficiency Type:  Large Swords
 Type:  1-handed
 Not Usable By:
@@ -174,7 +175,7 @@ Damage:  1D8 +5
 THAC0:  +5
 Damage Type: Slashing
 Weight: 6
-Speed Factor: 3
+Speed Factor: 2
 Proficiency Type: Axe
 Type:  1-handed
 Not Usable By:
@@ -190,10 +191,10 @@ STATISTICS:
 
 Once per day can increase bow's aim to an additional +5 to hit for two rounds
 
-Damage: +2
+Damage: +3
 THAC0: +5 bonus
 Weight: 7
-Speed Factor:  4
+Speed Factor:  2
 Proficiency Type:  Crossbow
 Type:  2-handed
 Not Usable By:
@@ -275,7 +276,7 @@ THAC0:  +2
 Damage Type: Slashing
 Special:  Find Traps 1/Day, Knock 1/Day
 Weight: 4
-Speed Factor: 5
+Speed Factor: 1
 Proficiency Type: Large Swords
 Type: 1-handed
 Not Usable By:
