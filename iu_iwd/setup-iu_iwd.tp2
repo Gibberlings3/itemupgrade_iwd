@@ -28,6 +28,7 @@ LANGUAGE ~Francais (par Lothringen)~
 
 BEGIN @0 DESIGNATED 0
 REQUIRE_PREDICATE GAME_IS ~iwd how totlm iwd-in-bg2~ @1
+LABEL ~cd_item_upgrade_for_iwd~
 
 OUTER_SET "iwd-in-bg2" = 0
 ACTION_IF GAME_IS ~iwd-in-bg2~ THEN BEGIN // if IWD-in-BG2 instead of true IWD...
