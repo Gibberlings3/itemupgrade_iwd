@@ -510,22 +510,3 @@ END ELSE BEGIN
     WRITE_ASCII (0x334 - ("%iwd-in-bg2%" * 0x68)) ~cdvex~ #8
   
 END
-
-
-/////                                                  \\\\\
-///// totl                                             \\\\\
-/////                                                  \\\\\
-
-/*
-ACTION_IF FILE_EXISTS_IN_GAME ~ar9700.are~ THEN BEGIN // totl
-
-  // full genie flask
-  COPY ~iu_iwd/itm/cdgenie.itm~  ~override~
-    SAY 0x08 #15326 // unidentified name
-    SAY 0x0c #15326 // identified name
-    SAY 0x50 @1022  // unidentified description
-    SAY 0x54 @1022  // identified description
-
-END
-*/
-    PRINT ~dplanar_totlm is %dplanar_totlm%~
